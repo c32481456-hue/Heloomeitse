@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+    <meta name="theme-color" content="#0b0d14" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <title>Cripto — Orb Dodge</title>
+    <style>
+      :root {
+        --bg: #0b0d14;
+        --surface: rgba(255, 255, 255, 0.06);
+        --border: rgba(255, 255, 255, 0.12);
+        --text: #eef0f6;
+        --muted: #9aa1b5;
+        --accent: #7c8cff;
+        --accent-2: #ff7ce0;
+        --gold: #ffd36e;
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      html, body {
+        height: 100%;
+        background: var(--bg);
+        color: var(--text);
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        overflow: hidden;
+        overscroll-behavior: none;
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+      canvas { position: fixed; inset: 0; width: 100%; height: 100%; touch-action: none; display: block; }
+
+      .hud {
+        position: fixed;
+        top: 0; left: 0; right: 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: calc(env(safe-area-inset-top) + 12px) 16px 12px;
+        pointer-events: none;
+        z-index: 2;
+      }
+      .hud .pill {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border-radius: 999px;
+        padding: 8px 14px;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+      }
+      .hud .pill small { color: var(--muted); font-weight: 600; margin-right: 6px; }
+      .hud a, .hud button { pointer-events: auto; }
+      .icon-btn {
+        appearance: none;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--text);
+        width: 40px; height: 40px;
+        border-radius: 50%;
+        font-size: 16px;
+        cursor: pointer;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+      }
+      .lives { letter-spacing: 2px; color: var(--accent-2); }
+
+      .overlay {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        background: rgba(11, 13, 20, 0.6);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        z-index: 3;
+        transition: opacity 0.3s ease;
+      }
+      .overlay.hidden { opacity: 0; pointer-events: none; }
+      .panel {
+        width: min(360px, 100%);
+        text-align: center;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        padding: 32px 24px;
+      }
+      .panel h1 {
+        font-size: 2.2rem;
+        line-height: 1.1;
+        margin-bottom: 10px;
+        background: linear-gradient(90deg, var(--accent), var(--accent-2));
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      .panel p { color: var(--muted); line-height: 1.5; margin-bottom: 8px; }
+      .panel .big { font-size: 3rem; font-weight: 800; color: var(--text); margin: 8px 0; }
+      .legend { display: flex; justify-content: center; gap: 18px; margin: 16px 0 24px; font-size: 0.9rem; color: var(--muted); }
+      .dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; vertical-align: -1px; margin-right: 6px; }
+      .btn {
+        appearance: none;
+        border: 0;
+        width: 100%;
+        padding: 16px;
+        border-radius: 14px;
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #fff;
+        background: linear-gradient(90deg, var(--accent), var(--accent-2));
+        cursor: pointer;
+        box-shadow: 0 10px 30px rgba(124, 140, 255, 0.35);
+      }
+      .btn:active { transform: scale(0.98); }
+      .link { display: inline-block; margin-top: 16px; color: var(--muted); text-decoration: none; font-size: 0.9rem; }
+    </style>
+  </head>
+  <body>
+    <canvas id="game"></canvas>
+
+    <div class="hud">
+      <div class="pill"><small>SCORE</small><span id="score">0</span></div>
+      <div class="pill lives" id="lives" aria-label="Lives">♥♥♥</div>
+      <button class="icon-btn" id="pauseBtn" aria-label="Pause">❚❚</button>
+    </div>
+
+    <div class="overlay" id="startScreen">
+      <div class="panel">
+        <h1>Orb Dodge</h1>
+        <p>Drag anywhere to move. Catch the gold orbs, dodge the red ones.</p>
+        <div class="legend">
+          <span><i class="dot" style="background: var(--gold)"></i>+10</span>
+          <span><i class="dot" style="background: #ff5c7a"></i>−1 life</span>
+        </div>
+        <button class="btn" id="startBtn">Play</button>
+        <p style="margin-top: 14px">Best: <strong id="bestStart">0</strong></p>
+        <a class="link" href="index.html">← Back to site</a>
+      </div>
+    </div>
+
+    <div class="overlay hidden" id="pauseScreen">
+      <div class="panel">
+        <h1>Paused</h1>
+        <p style="margin-bottom: 20px">Take a breath.</p>
+        <button class="btn" id="resumeBtn">Resume</button>
+      </div>
+    </div>
+
+    <div class="overlay hidden" id="overScreen">
+      <div class="panel">
+        <h1>Game over</h1>
+        <div class="big" id="finalScore">0</div>
+        <p id="bestMsg">Best: 0</p>
+        <div style="height: 16px"></div>
+        <button class="btn" id="againBtn">Play again</button>
+        <a class="link" href="index.html">← Back to site</a>
+      </div>
+    </div>
+
+    <script>
+      (() => {
+        const canvas = document.getElementById("game");
+        const ctx = canvas.getContext("2d");
+        const $ = (id) => document.getElementById(id);
+        const scoreEl = $("score"), livesEl = $("lives");
+        const screens = { start: $("startScreen"), pause: $("pauseScreen"), over: $("overScreen") };
+
+        const BEST_KEY = "cripto-orb-dodge-best";
+        let best = Number(localStorage.getItem(BEST_KEY)) || 0;
+        $("bestStart").textContent = best;
+
+        let W = 0, H = 0, dpr = 1;
+        function resize() {
+          dpr = Math.min(window.devicePixelRatio || 1, 2);
+          W = window.innerWidth;
+          H = window.innerHeight;
+          canvas.width = W * dpr;
+          canvas.height = H * dpr;
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+          if (player) {
+            player.x = Math.min(Math.max(player.x, player.r), W - player.r);
+            player.y = Math.min(Math.max(player.y, player.r), H - player.r);
+          }
+        }
+
+        let player, orbs, particles, stars, score, lives, state, elapsed, spawnTimer, invuln, target, last;
+
+        function reset() {
+          player = { x: W / 2, y: H * 0.75, r: 18 };
+          target = { x: player.x, y: player.y };
+          orbs = [];
+          particles = [];
+          score = 0;
+          lives = 3;
+          elapsed = 0;
+          spawnTimer = 0;
+          invuln = 0;
+          updateHud();
+        }
+
+        stars = Array.from({ length: 60 }, () => ({ x: Math.random(), y: Math.random(), s: Math.random() * 1.5 + 0.3, v: Math.random() * 20 + 10 }));
+
+        function updateHud() {
+          scoreEl.textContent = score;
+          livesEl.textContent = "♥".repeat(lives) + "♡".repeat(Math.max(0, 3 - lives));
+        }
+
+        function show(name) {
+          for (const k in screens) screens[k].classList.toggle("hidden", k !== name);
+        }
+
+        function start() {
+          reset();
+          state = "playing";
+          show(null);
+          last = performance.now();
+        }
+
+        function gameOver() {
+          state = "over";
+          if (score > best) {
+            best = score;
+            localStorage.setItem(BEST_KEY, best);
+            $("bestMsg").textContent = "New best score! 🎉";
+          } else {
+            $("bestMsg").textContent = "Best: " + best;
+          }
+          $("finalScore").textContent = score;
+          $("bestStart").textContent = best;
+          if (navigator.vibrate) navigator.vibrate([60, 40, 120]);
+          setTimeout(() => show("over"), 400);
+        }
+
+        function pause() {
+          if (state !== "playing") return;
+          state = "paused";
+          show("pause");
+        }
+        function resume() {
+          if (state !== "paused") return;
+          state = "playing";
+          show(null);
+          last = performance.now();
+        }
+
+        // Difficulty ramps with time: faster orbs, more frequent spawns, more red.
+        function spawn() {
+          const level = Math.min(elapsed / 60, 1);
+          const good = Math.random() > 0.4 + level * 0.25;
+          const r = good ? 10 : 12 + Math.random() * 10;
+          orbs.push({
+            x: r + Math.random() * (W - r * 2),
+            y: -r,
+            r,
+            vy: 140 + Math.random() * 80 + level * 260,
+            vx: (Math.random() - 0.5) * 40 * level,
+            good,
+          });
+        }
+
+        function burst(x, y, color, n = 14) {
+          for (let i = 0; i < n; i++) {
+            const a = Math.random() * Math.PI * 2, sp = 60 + Math.random() * 180;
+            particles.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 0.6, color });
+          }
+        }
+
+        function update(dt) {
+          elapsed += dt;
+          invuln = Math.max(0, invuln - dt);
+
+          // Smoothly follow the finger
+          const k = 1 - Math.pow(0.0005, dt);
+          player.x += (target.x - player.x) * k;
+          player.y += (target.y - player.y) * k;
+
+          spawnTimer -= dt;
+          if (spawnTimer <= 0) {
+            spawn();
+            spawnTimer = Math.max(0.22, 0.7 - elapsed * 0.008);
+          }
+
+          for (let i = orbs.length - 1; i >= 0; i--) {
+            const o = orbs[i];
+            o.y += o.vy * dt;
+            o.x += o.vx * dt;
+            if (o.x < o.r || o.x > W - o.r) o.vx *= -1;
+            const dx = o.x - player.x, dy = o.y - player.y;
+            if (dx * dx + dy * dy < (o.r + player.r) ** 2) {
+              if (o.good) {
+                score += 10;
+                burst(o.x, o.y, "#ffd36e");
+                if (navigator.vibrate) navigator.vibrate(10);
+                orbs.splice(i, 1);
+              } else if (invuln === 0) {
+                lives--;
+                invuln = 1.2;
+                burst(o.x, o.y, "#ff5c7a", 24);
+                if (navigator.vibrate) navigator.vibrate(80);
+                orbs.splice(i, 1);
+                if (lives <= 0) { updateHud(); gameOver(); return; }
+              }
+              updateHud();
+              continue;
+            }
+            if (o.y - o.r > H) orbs.splice(i, 1);
+          }
+
+          for (let i = particles.length - 1; i >= 0; i--) {
+            const p = particles[i];
+            p.x += p.vx * dt; p.y += p.vy * dt;
+            p.vx *= 0.96; p.vy *= 0.96;
+            p.life -= dt;
+            if (p.life <= 0) particles.splice(i, 1);
+          }
+        }
+
+        function draw(dt) {
+          ctx.fillStyle = "#0b0d14";
+          ctx.fillRect(0, 0, W, H);
+
+          ctx.fillStyle = "rgba(255,255,255,0.5)";
+          for (const s of stars) {
+            s.y += (s.v * dt) / H;
+            if (s.y > 1) { s.y = 0; s.x = Math.random(); }
+            ctx.fillRect(s.x * W, s.y * H, s.s, s.s);
+          }
+
+          if (!player) return;
+
+          for (const o of orbs) {
+            const c = o.good ? "#ffd36e" : "#ff5c7a";
+            ctx.shadowColor = c;
+            ctx.shadowBlur = 16;
+            ctx.fillStyle = c;
+            ctx.beginPath();
+            ctx.arc(o.x, o.y, o.r, 0, Math.PI * 2);
+            ctx.fill();
+          }
+
+          for (const p of particles) {
+            ctx.globalAlpha = Math.max(0, p.life / 0.6);
+            ctx.fillStyle = p.color;
+            ctx.fillRect(p.x - 2, p.y - 2, 4, 4);
+          }
+          ctx.globalAlpha = 1;
+
+          // Blink while invulnerable
+          if (state !== "over" && !(invuln > 0 && Math.floor(invuln * 10) % 2 === 0)) {
+            const g = ctx.createLinearGradient(player.x - player.r, player.y, player.x + player.r, player.y);
+            g.addColorStop(0, "#7c8cff");
+            g.addColorStop(1, "#ff7ce0");
+            ctx.shadowColor = "#7c8cff";
+            ctx.shadowBlur = 24;
+            ctx.fillStyle = g;
+            ctx.beginPath();
+            ctx.arc(player.x, player.y, player.r, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          ctx.shadowBlur = 0;
+        }
+
+        function loop(now) {
+          const dt = Math.min((now - (last || now)) / 1000, 0.05);
+          last = now;
+          if (state === "playing") update(dt);
+          draw(state === "paused" ? 0 : dt);
+          requestAnimationFrame(loop);
+        }
+
+        // Relative drag: the ball moves with the finger without being hidden under it.
+        let drag = null;
+        canvas.addEventListener("pointerdown", (e) => {
+          if (state !== "playing") return;
+          drag = { x: e.clientX, y: e.clientY, tx: target.x, ty: target.y };
+          canvas.setPointerCapture(e.pointerId);
+        });
+        canvas.addEventListener("pointermove", (e) => {
+          if (!drag || state !== "playing") return;
+          target.x = Math.min(Math.max(drag.tx + (e.clientX - drag.x) * 1.3, player.r), W - player.r);
+          target.y = Math.min(Math.max(drag.ty + (e.clientY - drag.y) * 1.3, player.r + 60), H - player.r);
+        });
+        const endDrag = () => (drag = null);
+        canvas.addEventListener("pointerup", endDrag);
+        canvas.addEventListener("pointercancel", endDrag);
+
+        $("startBtn").addEventListener("click", start);
+        $("againBtn").addEventListener("click", start);
+        $("pauseBtn").addEventListener("click", pause);
+        $("resumeBtn").addEventListener("click", resume);
+        document.addEventListener("visibilitychange", () => document.hidden && pause());
+        window.addEventListener("resize", resize);
+
+        resize();
+        state = "menu";
+        requestAnimationFrame(loop);
+      })();
+    </script>
+  </body>
+</html>
