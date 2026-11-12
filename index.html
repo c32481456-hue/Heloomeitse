@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cripto — Simple &amp; Smooth</title>
+    <meta name="description" content="A simple website with smooth animations." />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="bg" aria-hidden="true">
+      <span class="blob blob-a"></span>
+      <span class="blob blob-b"></span>
+      <span class="blob blob-c"></span>
+    </div>
+
+    <header class="nav">
+      <a class="logo" href="#top">cripto<span>.</span></a>
+      <nav>
+        <a href="#features">Features</a>
+        <a href="#work">Work</a>
+        <a href="#contact">Contact</a>
+      </nav>
+    </header>
+
+    <main id="top">
+      <section class="hero">
+        <p class="eyebrow rise" style="--i: 0">Welcome</p>
+        <h1>
+          <span class="line"><span class="rise" style="--i: 1">Simple ideas,</span></span>
+          <span class="line"><span class="rise accent" style="--i: 2">smooth motion.</span></span>
+        </h1>
+        <p class="lead rise" style="--i: 3">
+          A clean little website where everything glides into place. Scroll down and see.
+        </p>
+        <div class="actions rise" style="--i: 4">
+          <a class="btn primary" href="#features">Explore</a>
+          <a class="btn ghost" href="#contact">Say hello</a>
+        </div>
+        <a class="scroll-hint" href="#features" aria-label="Scroll to features"><span></span></a>
+      </section>
+
+      <section id="features" class="section">
+        <h2 class="reveal">What you get</h2>
+        <div class="grid">
+          <article class="card reveal" style="--d: 0">
+            <div class="icon">✦</div>
+            <h3>Clean</h3>
+            <p>No clutter. Just the content that matters, with room to breathe.</p>
+          </article>
+          <article class="card reveal" style="--d: 1">
+            <div class="icon">➜</div>
+            <h3>Fast</h3>
+            <p>Plain HTML, CSS and a few lines of JavaScript. Nothing to install.</p>
+          </article>
+          <article class="card reveal" style="--d: 2">
+            <div class="icon">◐</div>
+            <h3>Smooth</h3>
+            <p>Animations that ease in gently and never get in your way.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="work" class="section">
+        <h2 class="reveal">By the numbers</h2>
+        <div class="stats">
+          <div class="stat reveal" style="--d: 0"><strong data-count="3">0</strong><span>files</span></div>
+          <div class="stat reveal" style="--d: 1"><strong data-count="0">0</strong><span>dependencies</span></div>
+          <div class="stat reveal" style="--d: 2"><strong data-count="60">0</strong><span>frames per second</span></div>
+        </div>
+      </section>
+
+      <section id="contact" class="section contact">
+        <h2 class="reveal">Let's talk</h2>
+        <p class="reveal" style="--d: 1">Have an idea? Send a message and let's build it.</p>
+        <a class="btn primary reveal" style="--d: 2" href="mailto:hello@example.com">hello@example.com</a>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p>© <span id="year"></span> Cripto. Made simple.</p>
+    </footer>
+
+    <script src="script.js"></script>
+  </body>
+</html>
